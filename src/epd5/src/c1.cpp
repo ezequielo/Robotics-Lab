@@ -153,6 +153,25 @@ void Turtlebot::command(double gx, double gy)
 
 			// rotacion mejorada
 			// gira en sentido del angulo menor
+			std::cout << "Theta: " << theta << std::endl;
+			std::cout << "Angulo: " << angulo << " Margen:  " << margen << std::endl;
+			
+			if ( angulo < 0) {
+				
+				// transform angulo
+				angulo = (2 * M_PI) + angulo;
+			
+			}
+
+			if (theta < -0.1) {
+				
+				// transform theta
+				theta = (2 * M_PI) + theta;
+
+			}
+
+			std::cout << "Theta Trans: " << theta << std::endl;
+			std::cout << "Angulo Trans: " << angulo << " Margen:  " << margen << std::endl;
 
 			if ((angulo-theta) > 0 ) {
 
@@ -165,7 +184,7 @@ void Turtlebot::command(double gx, double gy)
 				std::cout << "Rotando DRA! " << std::endl;
 
 			}
-
+			
 		}
 	}
 

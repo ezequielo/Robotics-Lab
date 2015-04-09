@@ -225,8 +225,7 @@ int main(int argc, char** argv)
 		bool ret_value = robot.command(plan[cont_wp].position.x, plan[cont_wp].position.y);
 		
 		if (ret_value == true){
-			
-			// actualizamos el contador			
+					
 			cont_wp++;
 			std::cout << "\tGoal # " << cont_wp << " Reached !" << std::endl;
 		}
