@@ -1,0 +1,9 @@
+/build
+/devel
+
+*.jpg
+*.jpeg
+
+*.cpp~
+*.txt~
+
