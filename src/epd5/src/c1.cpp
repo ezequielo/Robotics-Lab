@@ -104,7 +104,7 @@ void Turtlebot::command(double gx, double gy)
 	
 	std::cout << "Dif X: " << gx << " - " << x << " = " << gx-x << std::endl;
 	std::cout << "Dif Y: " << gy << " - " << y << " = " << gy-y << std::endl;
-
+        
 	if (fabs(gx-x)<margen && fabs(gy-y)<margen){
 		
 		std::cout << "Hemos llegado! " << std::endl;
@@ -117,10 +117,20 @@ void Turtlebot::command(double gx, double gy)
 		// calcular angulo
 		
 		double angulo = atan2((gy-y),(gx-x));
-
-		std::cout << "Tan: " << tan << std::endl;
-		std::cout << "Theta: " << theta << std::endl;
-		std::cout << "Angulo: " << angulo << " Margen:  " << margen << std::endl;
+        
+        if ( angulo < 0) {
+            // transform angulo
+            angulo = (2 * M_PI) + angulo;
+        }
+        
+        if (theta < -0.1) {
+            // transform theta
+            theta = (2 * M_PI) + theta;
+        }
+        
+        std::cout << "Tan: " << tan << std::endl;
+        std::cout << "Theta: " << theta << std::endl;
+        std::cout << "Angulo: " << angulo << " Margen:  " << margen << std::endl;
 		
 		if (fabs(angulo-theta) < margen){			
 			
@@ -145,6 +155,20 @@ void Turtlebot::command(double gx, double gy)
 				linear_vel = v_base;
 
 			}
+            
+            // corrección del angualo sobre la marcha
+            
+            if ((angulo-theta) > 0 ) {
+                
+                angular_vel = 0.05;
+                std::cout << "Rotando IZQ sobre la marcha! " << std::endl;
+                
+            } else {
+                
+                angular_vel = -0.05;
+                std::cout << "Rotando DRA sobre la marcha! " << std::endl;
+                
+            }
 			
 			std::cout << "Distancia al objetivo: " << dist << std::endl;
 			std::cout << "Desplazando a  " << linear_vel << " m/s" << std::endl;
@@ -153,25 +177,7 @@ void Turtlebot::command(double gx, double gy)
 
 			// rotacion mejorada
 			// gira en sentido del angulo menor
-			std::cout << "Theta: " << theta << std::endl;
-			std::cout << "Angulo: " << angulo << " Margen:  " << margen << std::endl;
-			
-			if ( angulo < 0) {
-				
-				// transform angulo
-				angulo = (2 * M_PI) + angulo;
-			
-			}
 
-			if (theta < -0.1) {
-				
-				// transform theta
-				theta = (2 * M_PI) + theta;
-
-			}
-
-			std::cout << "Theta Trans: " << theta << std::endl;
-			std::cout << "Angulo Trans: " << angulo << " Margen:  " << margen << std::endl;
 
 			if ((angulo-theta) > 0 ) {
 
@@ -220,6 +226,7 @@ void Turtlebot::receivePose(const nav_msgs::OdometryConstPtr& msg)
 	theta=tf::getYaw(msg->pose.pose.orientation);
 
 	std::cout << "Pose: " << x << ", " << y << " ," << theta << std::endl;
+        std::cout << "-----------------------------------" << std::endl;
 
 
 }
