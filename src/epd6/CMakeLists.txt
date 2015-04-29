@@ -103,6 +103,7 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(epd6_test src/c4.cpp)
+add_executable(epd6_test2 src/c5.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -110,6 +111,7 @@ add_executable(epd6_test src/c4.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(epd6_test ${catkin_LIBRARIES} )
+target_link_libraries(epd6_test2 ${catkin_LIBRARIES} )
 
 #############
 ## Install ##

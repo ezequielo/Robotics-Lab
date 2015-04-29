@@ -140,27 +140,50 @@ void Turtlebot::receiveKinect(const sensor_msgs::LaserScan& msg)
 	double intensities[num_readings];
 
 	data_scan=msg;
-
+        
 	std::cout << "\tRANGE: " << msg.ranges.size() << std::endl;
 
 	float min = 10.0;
 	float angular_vel = 0.0;
 	float linear_vel = 0.5;
 	
+        int obstaculos = 0;
+        
 	for (unsigned int i = 0; i < msg.ranges.size(); i++ ){
 		
-		std::cout << "\tRANGE: " << msg.ranges[i] << std::endl;
-		
-		if (msg.ranges[i] < min ){
-			min = msg.ranges[i];
-		}
+            std::cout << "\tRANGE: " << msg.ranges[i] << std::endl;
 
-		if (min <= 2.0) {
-			linear_vel = 0.0;
-			angular_vel = 0.3;
-			std::cout << "\tTurtlebot detenido !" << std::endl;
-			std::cout << "\tDistancia al obstaculo: " << min << std::endl;
-		}
+            if (msg.ranges[i] < min ){
+                min = msg.ranges[i];
+            }
+            
+            
+            if (msg.ranges[i] != msg.ranges[i]){
+            
+                
+            
+            }
+                
+            
+                
+                
+                
+                
+                
+             
+        
+            if (min <= 8.0) {
+                angular_vel = 0.1;
+                std::cout << "\tTurtlebot desviandose !" << std::endl;
+                std::cout << "\tDistancia al obstaculo: " << min << std::endl;
+            }
+
+            if (min <= 2.0) {
+                    linear_vel = 0.0;
+                    angular_vel = 0.3;
+                    std::cout << "\tTurtlebot detenido !" << std::endl;
+                    std::cout << "\tDistancia al obstaculo: " << min << std::endl;
+            }
 	}
 	
 	publish(angular_vel,linear_vel);
