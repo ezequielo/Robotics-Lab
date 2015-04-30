@@ -59,6 +59,9 @@ private:
     ros::Subscriber kinect_sub_;
     ros::Subscriber pose_sub_;
 
+    
+    bool isClear(int read);
+    
     //!Publish the command to the turtlebot
     void publish(double angular_vel, double linear_vel);
 
@@ -103,6 +106,17 @@ bool Turtlebot::command(double gx, double gy) {
     return ret_val;
 }
 
+
+
+bool Turtlebot::isClear(int k){
+    
+    bool clear = true;
+    if (data_scan.ranges[k] <= 10)
+        clear = false;
+    
+    return clear;
+}
+
 /*
  *   findAltGoal finds a pair of alternatives coordenates when an 
  *   obstacle is detected 
@@ -110,10 +124,57 @@ bool Turtlebot::command(double gx, double gy) {
 
 float Turtlebot::findAltGoal() {
     
-    //if ( )
+    /*  
+     * 
+     *      Afecta a la trayectoria??? 
+     * 
+     */
     
+        
+    std::cout << "Angle min " << data_scan.angle_min << " rad" << ", " << data_scan.angle_min * (180/M_PI) <<" degrees" << std::endl;
+    std::cout << "Angle max " << data_scan.angle_max << " rad" << ", " << data_scan.angle_max * (180/M_PI) <<" degrees" << std::endl;
     
+    // Get read #
     
+    bool encontrado = false;
+    bool obstcl_init;          // true -> osbtacle; false -> clear
+    bool obstcl_read;        // true -> osbtacle; false -> clear
+    int k;         // laserScan read number
+    
+    obstcl_init = isClear(0);
+
+    for (int i = 0; i < data_scan.ranges.size(); i++){
+        //std::cout << "Lectura #" << i << " Resultado: " << data_scan.ranges[i] << std::endl;
+        obstcl_read = isClear(i);
+        
+        if (obstcl_init =! obstcl_read && encontrado == false){
+            bool read_plus1 = isClear(i+1);
+            bool read_plus2 = isClear(i+2);
+            
+            if (read_plus1 == read_plus2 && read_plus1 == obstcl_read) {
+                k = i;
+                encontrado = true;
+            }
+        }
+    }
+    
+    std::cout << "Lectura #" << k << std::endl;
+
+    // Get angle
+    
+    float gamma = data_scan.angle_min + (data_scan.angle_increment * k);
+    
+    std::cout << "Angulo Gamma" << gamma << " rad" << ", " << gamma * (180/M_PI) <<" degrees" << std::endl;
+    
+    // Get X point coordenates
+    
+    float w = sin(gamma) * data_scan.ranges[k];
+    float h = cos(gamma) * data_scan.ranges[k];
+    
+    std::cout << "R coordenates: " << x << ", " << y << std::endl;
+    std::cout << "(h, w): " << h << ", " << w << std::endl;
+    std::cout << "X coordenates: " << x + h << ", " << y + w << std::endl;
+
     return 0.0;
 }
 
@@ -225,22 +286,22 @@ int main(int argc, char** argv) {
 
     while (ros::ok()) {
 
-		if (robot.isPathClear() == true){
+        if (robot.isPathClear() == true){
 
-			std::cout << "Camino hacia el objetivo despejado!" << std::endl;
-			ros::spinOnce();
-			robot.command(xGoal, yGoal);
+            std::cout << "Camino hacia el objetivo despejado!" << std::endl;
+            ros::spinOnce();
+            robot.command(xGoal, yGoal);
 
-		} else {
+        } else {
 
-			std::cout << "El obstaculo obliga a cambiar la trayectoria!" << std::endl;
-			float altGoal = robot.findAltGoal();
+            std::cout << "El obstaculo obliga a cambiar la trayectoria!" << std::endl;
+            float altGoal = robot.findAltGoal();
 
-			//std::cout << "Reconduciendo a las coordenadas: " << altGoal[0] << ", " << altGoal[1] << std::endl;
-			//robot.command(altGoal[0], altGoal[1]);
-		}
-		loop_rate.sleep();
-	}
+            //std::cout << "Reconduciendo a las coordenadas: " << altGoal[0] << ", " << altGoal[1] << std::endl;
+            //robot.command(altGoal[0], altGoal[1]);
+        }
+        loop_rate.sleep();
+    }
 
     return 0;
 }
