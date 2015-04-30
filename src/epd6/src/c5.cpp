@@ -206,22 +206,26 @@ int main(int argc, char** argv) {
 
     while (ros::ok()) {
 
-        std::cout << "Puede seguir? " << robot.canRun() << std::endl;
-        if (robot.canRun() == true){
-            ros::spinOnce();
-            robot.command(xGoal, yGoal);
-            std::cout << "Robot avanzando! Sin obstaculos!" << std::endl;
-        } else {
-            std::cout << "Robot detenido! Obstaculo identificado!" << std::endl;
-        }
+		if (robot.pathIsClear() == true){
 
-        loop_rate.sleep();
+			std::cout << "Camino hacia el objetivo despejado!" << std::endl;
+			ros::spinOnce();
+			robot.command(xGoal, yGoal);
 
-    }
+		} else {
+
+			std::cout << "El obstaculo obliga a cambiar la trayectoria!" << std::endl;
+			float altGoal[] = robot.findAltGoal();
+
+			std::cout << "Reconduciendo a las coordenadas: " << altGoal[0] << ", " << altGoal[1] << std::endl;
+			robot.command(altGoal[0], altGoal[1]);
+		}
+		loop_rate.sleep();
+	}
 
     return 0;
-
 }
+
 
 std::vector<geometry_msgs::Pose> loadPlan(const char *filename) {
     std::vector<geometry_msgs::Pose> plan;
