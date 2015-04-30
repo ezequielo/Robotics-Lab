@@ -41,7 +41,8 @@ public:
      * This function will return true only if the goal has been reached.
      */
     bool command(double goal_x, double goal_y);
-    bool canRun();
+    bool isPathClear();
+    float findAltGoal();
 
 private:
 
@@ -79,6 +80,11 @@ Turtlebot::Turtlebot() {
 
 }
 
+
+/*
+    command 
+ */
+
 bool Turtlebot::command(double gx, double gy) {
 
     double linear_vel = 0.0;
@@ -97,24 +103,37 @@ bool Turtlebot::command(double gx, double gy) {
     return ret_val;
 }
 
-// return true if Turtlebot doesn't detect any obstacle
+/*
+ *   findAltGoal finds a pair of alternatives coordenates when an 
+ *   obstacle is detected 
+ */
 
-bool Turtlebot::canRun() {
+float Turtlebot::findAltGoal() {
+    
+    //if ( )
+    
+    
+    
+    return 0.0;
+}
 
-    bool can_run = true;
-    float min = 10.0; // msg.range_max?
 
-    for (unsigned int i = 0; i < data_scan.ranges.size(); i++) {
+/*
+ *   isPathClear returns true if there is not any obstacle
+ */
 
-        if (data_scan.ranges[i] < min) {
-            min = data_scan.ranges[i];
-        }
+bool Turtlebot::isPathClear() {
 
-        if (min <= 2.0) {
-            can_run = false;
-        }
+    bool isClear = true;
+    float min = 10.0;
+    int i = 0;
+    
+    while (i < data_scan.ranges.size() && isClear == true){
+        if (data_scan.ranges[i] < min) 
+            isClear = false;
+        i++;  
     }
-    return can_run;
+    return isClear;
 }
 
 
@@ -206,7 +225,7 @@ int main(int argc, char** argv) {
 
     while (ros::ok()) {
 
-		if (robot.pathIsClear() == true){
+		if (robot.isPathClear() == true){
 
 			std::cout << "Camino hacia el objetivo despejado!" << std::endl;
 			ros::spinOnce();
@@ -215,10 +234,10 @@ int main(int argc, char** argv) {
 		} else {
 
 			std::cout << "El obstaculo obliga a cambiar la trayectoria!" << std::endl;
-			float altGoal[] = robot.findAltGoal();
+			float altGoal = robot.findAltGoal();
 
-			std::cout << "Reconduciendo a las coordenadas: " << altGoal[0] << ", " << altGoal[1] << std::endl;
-			robot.command(altGoal[0], altGoal[1]);
+			//std::cout << "Reconduciendo a las coordenadas: " << altGoal[0] << ", " << altGoal[1] << std::endl;
+			//robot.command(altGoal[0], altGoal[1]);
 		}
 		loop_rate.sleep();
 	}
@@ -296,4 +315,5 @@ void visualizePlan(const std::vector< geometry_msgs::Pose >& plan, ros::Publishe
         marker_pub.publish(marker);
     }
 }
+
 
