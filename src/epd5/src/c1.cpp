@@ -66,8 +66,8 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    xGoal = std::atof(argv[1]);
-    yGoal = std::atof(argv[2]);
+    double xGoal = std::atof(argv[1]);
+    double yGoal = std::atof(argv[2]);
 
     ros::Rate loop_rate(20);
 
