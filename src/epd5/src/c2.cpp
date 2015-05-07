@@ -95,7 +95,7 @@ double Turtlebot::computeV(double gx, double gy) {
 
 bool Turtlebot::command(double gx, double gy) {
 
-    bool ret_val;
+    bool ret_val = false;
     double linear_vel;
     double angular_vel;
     double margen = 0.05;
@@ -107,6 +107,7 @@ bool Turtlebot::command(double gx, double gy) {
 
         linear_vel = 0.0;
         angular_vel = 0.0;
+        ret_val = true;
         std::cout << "Hemos llegado! " << std::endl;
 
     } else {
