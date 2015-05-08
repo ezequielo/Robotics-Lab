@@ -1,7 +1,7 @@
 /*
  *
  *           KINECT SENSOR TEST 2
- *       Reaching a single goal avoiding obstacles
+ *       Obstacle avoidance (1 obstacle, clear region visible)
  *
  */
 
@@ -31,21 +31,17 @@
  * methods to control the robot by publishing data
  */
 class Turtlebot {
+
 public:
+    
     Turtlebot();
     
-    /*
-     * This function should command the robot to reach the goal
-     * It should compute the commands to the robot by knowing the current position
-     * and the goal position.
-     * This function will return true only if the goal has been reached.
-     */
     bool command(double goal_x, double goal_y);
     bool isPathClear();
+    bool alignToGoal(double x, double y);
     std::vector<float> findAltGoal();
     
 private:
-    
     
     ros::NodeHandle nh_;
     
@@ -59,9 +55,12 @@ private:
     ros::Subscriber kinect_sub_;
     ros::Subscriber pose_sub_;
     
-    
+    double angleDiff(double dest_angle);
+    double computeW(double dest_angle);
+    double computeV(double gx, double gy);
     bool isClear(int k);
     int findClearRegion(int k);
+    double computeAngulo(double gx, double gy);
     
     //!Publish the command to the turtlebot
     void publish(double angular_vel, double linear_vel);
@@ -75,12 +74,10 @@ private:
 };
 
 Turtlebot::Turtlebot() {
+    
     vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 1);
-    
     pose_sub_ = nh_.subscribe("/odom", 1, &Turtlebot::receivePose, this);
-    
     kinect_sub_ = nh_.subscribe("/scan", 1, &Turtlebot::receiveKinect, this);
-    
     
 }
 
@@ -88,115 +85,97 @@ Turtlebot::Turtlebot() {
  command
  */
 
-bool Turtlebot::command(double gx, double gy) {
-    
-    bool ret_val = false;
-    
-    double linear_vel = 0.0;
-    double angular_vel = 0.0;
-    
-    double margen = 0.05;
+double Turtlebot::angleDiff(double dest_angle) {
+
+    double diff = fmod(dest_angle - theta + 180, 360) - 180;
+    return diff < -180 ? diff + 360 : diff;
+
+}
+
+double Turtlebot::computeW(double dest_angle) {
+
+    double diff = angleDiff(dest_angle);
+    double base_w = 0.1;
+    double w = base_w * diff < base_w ? base_w : base_w * diff;
+    return diff >= 0 ? w : -w;
+
+}
+
+double Turtlebot::computeV(double gx, double gy) {
+
+    // distancia euclidea
+    double dx = gx - x;
+    double dy = gy - y;
+    double dist = sqrt((dx * dx) + (dy * dy));
+
+    // calculo de la velocidad
     double v_base = 0.1;
+    return v_base * dist > v_base ? v_base * dist : v_base;
+
+}
+
+double Turtlebot::computeAngulo(double gx, double gy){
+    return atan2((gy - y), (gx - x));
+}
+
+bool Turtlebot::alignToGoal(double x, double y){
     
+    bool align = false;
+    double margen = 0.05;
+    double angulo = computeAngulo(x, y);
+    
+    if (fabs(angulo - theta) > margen)
+        publish(computeW(angulo), 0.0);
+    else
+        align = true;
+    
+    return align;
+
+}
+
+
+bool Turtlebot::command(double gx, double gy) {
+
+    bool ret_val = false;
+    double linear_vel;
+    double angular_vel;
+    double margen = 0.05;
+
     std::cout << "Dif X: " << gx << " - " << x << " = " << gx - x << std::endl;
     std::cout << "Dif Y: " << gy << " - " << y << " = " << gy - y << std::endl;
-    
+
     if (fabs(gx - x) < margen && fabs(gy - y) < margen) {
-        
-        std::cout << "Hemos llegado! " << std::endl;
-        
+
         linear_vel = 0.0;
         angular_vel = 0.0;
         ret_val = true;
-        
+        std::cout << "Hemos llegado! " << std::endl;
+
     } else {
-        
+
         // calcular angulo
-        
-        double angulo = atan2((gy-y),(gx-x));
-        
-        std::cout << "Angulo ANTES: " << angulo << " rads // " << angulo * (180 / M_PI) << " grados" << std::endl;
-        std::cout << "Theta ANTES: " << theta << " rads // " << theta * (180 / M_PI) << " grados" << std::endl;
-        
-        
-        if (angulo < 0) {
-            // transform angulo
-            angulo = (2 * M_PI) + angulo;
-        }
-        
-        if (theta < -0.1) {
-            // transform theta
-            theta = (2 * M_PI) + theta;
-        }
-        
-        std::cout << "Theta: " << theta << " rads // " << theta * (180 / M_PI) << " grados" << std::endl;
-        std::cout << "Angulo: " << angulo << " rads // " << angulo * (180 / M_PI)  <<" grados" << std::endl;
-        
+        double angulo = computeAngulo(gx, gy);
+        std::cout << "Theta: " << theta << std::endl;
+        std::cout << "Angulo: " << angulo << std::endl;
+
         if (fabs(angulo - theta) < margen) {
-            
-            // desplazamiento mejorado
-            // la velocidad depende de la distancia al goal
-            
-            
-            // distancia euclidea
-            
-            double dx = gx - x;
-            double dy = gy - y;
-            double dist = sqrt((dx * dx) + (dy * dy));
-            
-            // calculo de la velocidad
-            
-            if (v_base * dist > v_base) {
-                
-                linear_vel = v_base * dist;
-                
-            } else {
-                
-                linear_vel = v_base;
-                
-            }
-            
+
+            // calculo de V
+            linear_vel = computeV(gx, gy);
             // corrección del angualo sobre la marcha
-            
-            if ((angulo - theta) > 0) {
-                
-                angular_vel = 0.05;
-                std::cout << "Rotando IZQ sobre la marcha! " << std::endl;
-                
-            } else {
-                
-                angular_vel = -0.05;
-                std::cout << "Rotando DRA sobre la marcha! " << std::endl;
-                
-            }
-            
-            std::cout << "Distancia al objetivo: " << dist << std::endl;
-            std::cout << "Desplazando a  " << linear_vel << " m/s" << std::endl;
-            
+            angular_vel = computeW(angulo);
+            std::cout << "Desplazando a  " << linear_vel << " m/s Girando a " << angular_vel << " rad/s" << std::endl;
+
         } else {
-            
-            // rotacion mejorada
-            // gira en sentido del angulo menor
-            
-            
-            if ((angulo - theta) > 0) {
-                
-                angular_vel = 0.1;
-                std::cout << "Rotando IZQ! " << std::endl;
-                
-            } else {
-                
-                angular_vel = -0.1;
-                std::cout << "Rotando DRA! " << std::endl;
-                
-            }
-            
+
+            // calculo de W
+            angular_vel = computeW(angulo);
+            std::cout << "Girando a " << angular_vel << " rad/s" << std::endl;
+
         }
     }
-    
+
     publish(angular_vel, linear_vel);
-    
-    
     return ret_val;
 }
 
@@ -222,6 +201,10 @@ int Turtlebot::findClearRegion(int k) {
  */
 
 std::vector<float> Turtlebot::findAltGoal() {
+    
+    
+    
+    
     
     /*
      *
@@ -278,25 +261,6 @@ std::vector<float> Turtlebot::findAltGoal() {
         i++;
     }
     
-    /* for (int i = 1; i < data_scan.ranges.size(); i++){
-     //std::cout << "Lectura #" << i << " Resultado: " << data_scan.ranges[i] << std::endl;
-     obstcl_read = isClear(i);
-     
-     if (obstcl_init != obstcl_read && encontrado == false){
-     
-     std::cout << "Posible lectura! " << std::endl;
-     
-     bool read_plus1 = isClear(i+1);
-     bool read_plus2 = isClear(i+2);
-     
-     if (read_plus1 == read_plus2 && read_plus1 == obstcl_read) {
-     k = i;
-     encontrado = true;
-     std::cout << "Lectura encontrada: " << i << " isClear:  " << isClear(i) << std::endl;
-     }
-     }
-     } */
-    
     std::cout << "Lectura #" << k << " Salida: " << data_scan.ranges[k] << std::endl;
     
     // Get angle
@@ -344,16 +308,23 @@ std::vector<float> Turtlebot::findAltGoal() {
 
 bool Turtlebot::isPathClear() {
     
-    bool isClear = true;
+    receiveKinect(data_scan);
+    bool is_clear = true;
+    bool osctl_free = true;
     float min = 10.0;
     int i = 0;
     
-    while (i < data_scan.ranges.size() && isClear == true) {
+    while (i < data_scan.ranges.size() && osctl_free == true) {
         if (data_scan.ranges[i] < min)
-            isClear = false;
+            osctl_free = false;
         i++;
     }
-    return isClear;
+    
+    
+    
+    
+    
+    return osctl_free;
 }
 
 
@@ -406,44 +377,70 @@ int main(int argc, char** argv) {
         return 0;
     }
     
-    // vector
     std::vector<geometry_msgs::Pose> plan = loadPlan(argv[1]);
     unsigned int cont_wp = 0;
-    
     std::vector<float> alt_goal;
     bool alt = false;
+    bool new_dest = true;
+    bool align = false;
+    double dest[] = {-1, plan[0].position.x, plan[0].position.y};
     
     ros::Rate loop_rate(20);
-    
+     
     while (ros::ok() && cont_wp < plan.size()) {
         
         ros::spinOnce();
         
-        if (robot.isPathClear() == true && alt == false) {
+        if (align == false) {
             
-            std::cout << "Camino hacia el objetivo despejado!" << std::endl;
-            bool ret_value = robot.command(plan[cont_wp].position.x, plan[cont_wp].position.y);
-            
-            if (ret_value == true) {
+            std::cout << "Alineando Turtlebot!" << std::endl;
+            align = robot.alignToGoal(dest[1], dest[2]);
+        
+        } else {
+        
                 
-                cont_wp++;
-                std::cout << "\tGoal # " << cont_wp << " Reached !" << std::endl;
+            if (robot.isPathClear() == true && new_dest == true) {
+
+                std::cout << "Camino hacia el objetivo despejado!" << std::endl;
+                dest[0] = -1;
+                dest[1] = plan[cont_wp].position.x;
+                dest[2] = plan[cont_wp].position.y;
+
+                new_dest == false;
+
+            } else if (robot.isPathClear() == false && new_dest == true){
+
+                std::cout << "El obstaculo obliga a cambiar la trayectoria!" << std::endl;
+
+                if (alt == false){
+                    alt_goal = robot.findAltGoal();
+                    alt = true;
+                }
+
+                std::cout << "Reconduciendo a las coordenadas: " << alt_goal[0] << ", " << alt_goal[1] << std::endl;
+
+                dest[0] = 1;
+                dest[1] = (double) alt_goal[0];
+                dest[2] = (double) alt_goal[1];
+
+                align = false;
+                new_dest = false;
             }
             
-        } else if (alt == true) {
-            std::cout << "Reconduciendo a las coordenadas: " << alt_goal[0] << ", " << alt_goal[1] << std::endl;
-            bool ret_alt = robot.command((double) alt_goal[0], (double) alt_goal[1]);
-            
-            if (ret_alt == true)
-                alt = false;
-            
-        } else {
-            
-            std::cout << "El obstaculo obliga a cambiar la trayectoria!" << std::endl;
-            alt_goal = robot.findAltGoal();
-            alt = true;
+            bool ret_value = robot.command(dest[1], dest[2]);
+            if (ret_value == true){
+                
+                if (dest[0] > 0)
+                    alt = false;
+                else
+                    cont_wp++;
+                
+                align = false;
+                new_dest = true;
+            }
         }
         
+        //usleep(1*500000);
         std::cout << "------------------------------------------\n" << std::endl;
         loop_rate.sleep();
     }
