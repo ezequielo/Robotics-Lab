@@ -39,19 +39,22 @@ void callback(const sensor_msgs::Image::ConstPtr& colorMsg, const sensor_msgs::I
     cv::Moments moments = cv::moments(out_frame, 1);
     double col = moments.m10 / moments.m00;
     double row = moments.m01 / moments.m00;
+    
+    if (!isnan(col) and !isnan(row) ) {
+    
+        cv::circle(color, cv::Point(col, row), 10, cv::Scalar(0, 0, 255), 3);
+        std::cout << "X: " << col << ", Y:" << row << std::endl;
 
-    cv::circle(color, cv::Point(col, row), 10, cv::Scalar(0, 0, 255), 3);
-    std::cout << "X: " << col << ", Y:" << row << std::endl;
+        // results to file
+        outfile.open("res2.txt", std::ios_base::app);
+        outfile << colorMsg->header.stamp.sec << "\t" << colorMsg->header.stamp.nsec << "\t" << row << "\t" << col;
+        outfile << std::endl;
+        outfile.close();
 
-    // results to file
-    outfile.open("res2.txt", std::ios_base::app);
-    outfile << colorMsg->header.stamp.sec << "\t" << colorMsg->header.stamp.nsec << "\t" << row << "\t" << col;
-    outfile << std::endl;
-    outfile.close();
-
-    // display results
-    cv::imshow("Original Frame", color);
-    cv::imshow("Thresholded Frame", out_frame);
+        // display results
+        cv::imshow("Original Frame", color);
+        cv::imshow("Thresholded Frame", out_frame);
+    }
 
     cv::waitKey(5);
 }
