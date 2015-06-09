@@ -1,7 +1,5 @@
 /*
- *
- *           KINECT SENSOR TEST 2
- *       Obstacle avoidance (1 obstacle, clear region visible)
+ *	RVA Navigation Challenge
  *
  */
 
@@ -35,7 +33,6 @@ class Turtlebot {
 public:
     
     Turtlebot();
-    
     bool command(double goal_x, double goal_y);
     bool isPathClear();
     bool alignToGoal(double x, double y);
@@ -64,12 +61,10 @@ private:
     
     //!Publish the command to the turtlebot
     void publish(double angular_vel, double linear_vel);
-    
     //!Callback for robot position
     void receivePose(const nav_msgs::OdometryConstPtr & pose);
     //!Callback for kinect
     void receiveKinect(const sensor_msgs::LaserScan & laser_kinect);
-    
     
 };
 
@@ -81,9 +76,6 @@ Turtlebot::Turtlebot() {
     
 }
 
-/*
- command
- */
 
 double Turtlebot::angleDiff(double dest_angle) {
 
@@ -92,14 +84,16 @@ double Turtlebot::angleDiff(double dest_angle) {
 
 }
 
+
 double Turtlebot::computeW(double dest_angle) {
 
     double diff = angleDiff(dest_angle);
-    double base_w = 0.1;
+    double base_w = 0.07;
     double w = base_w * diff < base_w ? base_w : base_w * diff;
     return diff >= 0 ? w : -w;
 
 }
+
 
 double Turtlebot::computeV(double gx, double gy) {
 
@@ -114,9 +108,11 @@ double Turtlebot::computeV(double gx, double gy) {
 
 }
 
+
 double Turtlebot::computeAngulo(double gx, double gy){
     return atan2((gy - y), (gx - x));
 }
+
 
 bool Turtlebot::alignToGoal(double x, double y){
     
@@ -179,6 +175,7 @@ bool Turtlebot::command(double gx, double gy) {
     return ret_val;
 }
 
+
 bool Turtlebot::isClear(int k) {
     
     bool clear = true;
@@ -186,6 +183,7 @@ bool Turtlebot::isClear(int k) {
         clear = false;
     return clear;
 }
+
 
 int Turtlebot::findClearRegion(int k) {
     
@@ -195,29 +193,11 @@ int Turtlebot::findClearRegion(int k) {
         return -1;
 }
 
-/*
- *   findAltGoal finds a pair of alternatives coordenates when an
- *   obstacle is detected
- */
 
 std::vector<float> Turtlebot::findAltGoal() {
     
-    
-    
-    
-    
-    /*
-     *
-     *      Afecta a la trayectoria???
-     *
-     */
-    
-    
     std::vector<float> vector(2);
-    
-    //std::cout << "Angle min " << data_scan.angle_min << " rad" << ", " << data_scan.angle_min * (180/M_PI) <<" degrees" << std::endl;
-    //std::cout << "Angle max " << data_scan.angle_max << " rad" << ", " << data_scan.angle_max * (180/M_PI) <<" degrees" << std::endl;
-    
+
     // Get read #
     
     bool encontrado = false;
@@ -236,7 +216,7 @@ std::vector<float> Turtlebot::findAltGoal() {
     while (encontrado == false && i < data_scan.ranges.size()) {
         
         obstcl_read = isClear(i);
-        //std::cout << "Lectura #" << i << " Resultado: " << data_scan.ranges[i] << std::endl;
+
         if (obstcl_init != obstcl_read) {
             
             std::cout << "Posible lectura! " << std::endl;
@@ -284,17 +264,15 @@ std::vector<float> Turtlebot::findAltGoal() {
     double ay = y + h;
     
     if (!drc) {
-        ax = x - 0.5;
+        ax = x - 0.2;
         std::cout << "findClearRegion > 0: IZQ" << std::endl;
         
     } else {
-        ax = x + 0.5;
+        ax = x + 0.2;
         std::cout << "findClearRegion < 0: DRC" << std::endl;
     }
     
-    
     std::cout << "Alt Goal coordenates: " << ax << ", " << ay << std::endl;
-    //std::cout << "Alt Goal coordenates: " << vector << std::endl;
     
     vector[0] = ax;
     vector[1] = ay;
@@ -302,9 +280,6 @@ std::vector<float> Turtlebot::findAltGoal() {
     return vector;
 }
 
-/*
- *   isPathClear returns true if there is not any obstacle
- */
 
 bool Turtlebot::isPathClear() {
     
@@ -319,11 +294,7 @@ bool Turtlebot::isPathClear() {
             osctl_free = false;
         i++;
     }
-    
-    
-    
-    
-    
+
     return osctl_free;
 }
 
@@ -440,7 +411,6 @@ int main(int argc, char** argv) {
             }
         }
         
-        //usleep(1*500000);
         std::cout << "------------------------------------------\n" << std::endl;
         loop_rate.sleep();
     }
